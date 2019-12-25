@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8" />
+  <title>Multi Line Chart</title>
+  <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+  <!-- <link rel="stylesheet" type="text/css" href="styles.css" /> -->
+  <style>
+    /* AXES */
+    /* ticks */
+    .axis line {
+      stroke: #706f6f;
+      stroke-width: 0.5;
+      shape-rendering: crispEdges;
+    }
+
+    /* axis contour */
+    .axis path {
+      stroke: #706f6f;
+      stroke-width: 0.7;
+      shape-rendering: crispEdges;
+    }
+
+    /* axis text */
+    .axis text {
+      fill: #2b2929;
+      font-family: Georgia;
+      font-size: 120%;
+    }
+    /* LINE CHART */
+    path {
+      fill: none;
+      stroke: #ed3700;
+    }
+	.dot {
+    fill: #ffab00;
+    stroke: #fff;
+}
+  
+  .focus circle {
+  fill: none;
+  stroke: steelblue;
+}
+  </style>
+</head>
+<body>
+  <div id="container" class="svg-container"></div>
+  <script>
+    //------------------------1. PREPARATION-------------------------//
+    //-----------------------------SVG-------------------------------//
+    const width = 960;
+    const height = 500;
+    const margin = 50;
+    const padding = 50;
+    const adj = 60;
+    // we are appending SVG first
+    const svg = d3
+      .select("div#container")
+      .append("svg")
+      .attr("preserveAspectRatio", "xMinYMin meet")
+      .attr(
+        "viewBox",
+        "-" +
+          adj +
+          " -" +
+          adj +
+          " " +
+          (width + adj * 3) +
+          " " +
+          (height + adj * 3)
+      )
+      .style("padding", padding)
+      .style("margin", margin)
+      .classed("svg-content", true);
+
+    // const timeConv = d3.timeParse("%d-%b-%Y");
+    // const timeConv = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+
+    const timeConv = d3.timeParse("%d-%b-%Y");
+    // const dataset = d3.csv(
+      // "https://gist.githubusercontent.com/d3noob/ddd7129c4486085937eb28da0d22a240/raw/b321a9443343e8ebd01a8d11f1dc525fa42c342b/data.csv"
+    // );
+    const dataset = d3.csv(
+      "https://raw.githubusercontent.com/DevanshuGoyal8/Public-Data/master/data_final.csv"
+    );
+    dataset.then(function(data) {
+      const slices = data.columns.slice(1).map(function(id) {
+        return {
+          id: id,
+          values: data.map(function(d) {
+            return {
+              date: timeConv(d.date),
+              measurement: +d[id]
+            };
+          })
+        };
+      });
+      console.log("Column headers", data.columns);
+      console.log("Column headers without date", data.columns.slice(1));
+      // returns the sliced dataset
+      console.log("Slices", slices);
+      // returns the first slice
+      console.log("First slice", slices[0]);
+      // returns the array in the first slice
+      console.log("A array", slices[0].values);
+      // returns the date of the first row in the first slice
+      console.log("Date element", slices[0].values[0].date);
+      // returns the array's length
+      console.log("Array length", slices[0].values.length);
+
+      //-----------------------------DATA------------------------------//
+
+      //----------------------------SCALES-----------------------------//
+      const xScale = d3.scaleTime().range([0, width]);
+      const yScale = d3.scaleLinear().rangeRound([height, 0]);
+      xScale.domain(
+        d3.extent(data, function(d) {
+          return timeConv(d.date);
+        })
+      );
+      yScale.domain([
+        0,
+        d3.max(slices, function(c) {
+          return d3.max(c.values, function(d) {
+            return d.measurement + 4;
+          });
+        })
+      ]);
+	  
+
+      //   const yaxis = d3.axisLeft().scale(yScale);
+      //   const xaxis = d3.axisBottom().scale(xScale);
+
+      const yaxis = d3
+        .axisLeft()
+        // .ticks(slices[0].values.length)
+        .scale(yScale);
+
+      const xaxis = d3
+        .axisBottom()
+        // .ticks(d3.timeDay.every(1))
+        .tickFormat(d3.timeFormat("%d-%b-%y"))
+        .scale(xScale);
+      //   svg
+      //     .append("g")
+      //     .attr("class", "axis")
+      //     .attr("transform", "translate(0," + height + ")")
+      //     // .attr("transform", "rotate(90)")
+      //     .call(xaxis);
+
+      svg
+        .append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xaxis)
+        .selectAll("text")
+        .attr("y", 0)
+        .attr("x", 9)
+        .attr("dy", ".35em")
+        .attr("transform", "rotate(90)")
+        .style("text-anchor", "start");
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .call(yaxis);
+
+      //this you had
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .call(yaxis)
+        //this you append
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("dy", ".75em")
+        .attr("y", 6)
+        .style("text-anchor", "end")
+        .text("Step");
+		
+	
+
+      const line = d3
+        .line()
+        .x(function(d) {
+          return xScale(d.date);
+        })
+        .y(function(d) {
+          return yScale(d.measurement);
+        });
+
+      const lines = svg
+        .selectAll("lines")
+        .data(slices)
+        .enter()
+        .append("g");
+
+      lines.append("path").attr("d", function(d) {
+        return line(d.values);
+      });
+	 
+      var lineFunction = d3
+.line()
+.x(function(d) {
+return xScale(d.date);
+})
+.y(function(d) {
+return yScale(d.measurement);
+})
+.curve(d3.curveLinear);
+
+const g = svg.append("g");
+
+
+var mouseover = function(d) {
+tooltip.style("opacity", 1);
+};
+
+var mousemove = function(d) {
+//console.log(d);
+console.log(d3.mouse(this)[1]);
+tooltip
+.html("Date: " + d3.timeFormat("%d-%b-%y")(d.date) + "<br/>" + "Step: " + d.measurement)
+.style("left", d3.mouse(this)[0] + 90 + "px")
+.style("top", d3.mouse(this)[1] + 70 + "px");
+};
+
+// A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+var mouseleave = function(d) {
+tooltip
+.transition()
+.duration(200)
+.style("opacity", 0);
+};
+var tooltip = d3
+.select("body")
+.append("div")
+.style("opacity", 0)
+.attr("class", "tooltip")
+.style("background-color", "white")
+.style("border", "solid")
+.style("border-width", "1px")
+.style("border-radius", "5px")
+.style("padding", "10px")
+.style("position", "absolute");
+var path = g
+.append("path")
+.attr("class", "path1")
+.attr("id", "blueLine")
+.attr("d", lineFunction(slices[0].values))
+.attr("stroke", "blue")
+.attr("stroke-width", 2)
+.attr("fill", "none")
+.attr("clip-path", "url(#clip)");
+
+// plot a circle at each data point
+g.selectAll(".dot")
+.data(slices[0].values)
+.enter()
+.append("circle")
+.attr("cx", function(d) {
+return xScale(d.date);
+})
+.attr("cy", function(d) {
+return yScale(d.measurement);
+})
+.attr("r", 3)
+.attr("class", "blackDot")
+.attr("clip-path", "url(#clip)")
+.on("mouseover", mouseover)
+.on("mousemove", mousemove)
+.on("mouseleave", mouseleave);
+    });
+
+    //-----------------------------AXES------------------------------//
+
+    //----------------------------LINES------------------------------//
+
+    //-------------------------2. DRAWING----------------------------//
+
+    //-----------------------------AXES------------------------------//
+
+    //----------------------------LINES------------------------------//
+  </script>
+</body>
